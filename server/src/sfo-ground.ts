@@ -1,21 +1,22 @@
-// SFO surface traffic from the airplanes.live area API — feeds the "who's
+// SFO surface traffic from the adsb.lol area API — feeds the "who's
 // taxiing / who's next" panel on the TV and the Twitch stream. The local
 // receiver rarely hears surface targets 13 mi away at ground level, so this
 // comes from the aggregator instead.
 //
-// Polite polling: one request every POLL_MS (airplanes.live asks hobby users
+// Polite polling: one request every POLL_MS (the API asks hobby users
 // to stay around 1 req/s; we're far under). Failures skip the tick and keep
 // the last snapshot — the panel just shows slightly stale dots.
 
 import type { GroundAircraft } from "@shared/index.js";
+import { ADSB_USER_AGENT } from "./datasource.js";
 
 const SFO_LAT = 37.6213;
 const SFO_LON = -122.379;
 const RADIUS_NM = 3;
 const POLL_MS = 6000;
-const URL = `https://api.airplanes.live/v2/point/${SFO_LAT}/${SFO_LON}/${RADIUS_NM}`;
+const URL = `https://api.adsb.lol/v2/point/${SFO_LAT}/${SFO_LON}/${RADIUS_NM}`;
 
-/** Raw airplanes.live aircraft record (the fields we read). */
+/** Raw ADS-B aircraft record (the fields we read). */
 interface AlAircraft {
   hex?: string;
   flight?: string;
@@ -42,6 +43,10 @@ export class SfoGroundPoller {
   }
 
   start(): void {
+    if (process.env.SFO_GROUND === "0") {
+      console.log("[sfo-ground] disabled via SFO_GROUND=0");
+      return;
+    }
     if (this.timer) return;
     void this.poll();
     this.timer = setInterval(() => void this.poll(), POLL_MS);
@@ -54,7 +59,10 @@ export class SfoGroundPoller {
 
   private async poll(): Promise<void> {
     try {
-      const res = await fetch(URL, { signal: AbortSignal.timeout(5000) });
+      const res = await fetch(URL, {
+        headers: { "User-Agent": ADSB_USER_AGENT },
+        signal: AbortSignal.timeout(5000),
+      });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const body = (await res.json()) as { ac?: AlAircraft[] };
       const aircraft: GroundAircraft[] = [];

@@ -344,11 +344,10 @@ export interface Config {
 }
 
 export const DEFAULT_CONFIG: Config = {
-  // Default center: San Francisco International (SFO). Set this to your own
-  // location — ideally where you'll be looking up at the ceiling.
-  centerLat: 37.6213,
-  centerLon: -122.379,
-  locationName: "San Francisco International",
+  // Default center: Winnipeg, Manitoba.
+  centerLat: 49.9546,
+  centerLon: -97.1264,
+  locationName: "Winnipeg, MB",
   radiusMiles: 3,
   locationProfiles: [],
 
@@ -410,7 +409,7 @@ export const DEFAULT_CONFIG: Config = {
   rangeRings: true,
   compass: true,
   highlightEmergency: true,
-  showAirport: true,
+  showAirport: false,
   airport: SFO_AIRPORT,
   showHud: false,
 

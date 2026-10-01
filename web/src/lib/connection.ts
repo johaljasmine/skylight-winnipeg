@@ -46,7 +46,7 @@ export class Connection {
 
   private url(): string {
     const proto = location.protocol === "https:" ? "wss" : "ws";
-    return `${proto}://${location.host}/ws`;
+    return `${proto}://${location.hostname + ":3000"}/ws`;
   }
 
   private open(): void {

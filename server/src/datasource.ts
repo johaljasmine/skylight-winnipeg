@@ -27,6 +27,9 @@ interface RawAircraft {
   rssi?: number;
 }
 
+export const ADSB_USER_AGENT =
+  "skylight-local/1.0 (+https://github.com/cpaczek/skylight)";
+
 function normalize(raw: RawAircraft, ts: number): Aircraft | null {
   if (!raw.hex) return null;
   const onGround = raw.alt_baro === "ground";
@@ -51,8 +54,11 @@ function normalize(raw: RawAircraft, ts: number): Aircraft | null {
   };
 }
 
-async function fetchJson(url: string): Promise<any> {
-  const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
+async function fetchJson(url: string, userAgent?: string): Promise<any> {
+  const res = await fetch(url, {
+    headers: userAgent ? { "User-Agent": userAgent } : undefined,
+    signal: AbortSignal.timeout(5000),
+  });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
@@ -91,7 +97,7 @@ const RATE_LIMIT_BACKOFF_MS = 15_000;
 
 export interface PollerOptions {
   source: DataSource;
-  /** airplanes.live point template, {lat}/{lon}/{r} are filled from config. */
+  /** adsb.lol point template, {lat}/{lon}/{r} are filled from config. */
   apiUrlTemplate: string;
   pollMs: number;
   /** When source is "radio", also poll the API and merge (keeps landing
@@ -214,7 +220,7 @@ export class Poller {
   private async fetchList(source: DataSource, now: number): Promise<Aircraft[] | null> {
     const url = source === "radio" ? this.o.getConfig().radioUrl : this.buildApiUrl();
     try {
-      const json = await fetchJson(url);
+      const json = await fetchJson(url, source === "api" ? ADSB_USER_AGENT : undefined);
       const rawList: RawAircraft[] = json.aircraft ?? json.ac ?? [];
       const list: Aircraft[] = [];
       for (const raw of rawList) {
